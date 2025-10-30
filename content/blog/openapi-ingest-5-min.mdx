@@ -1,0 +1,15 @@
+---
+title: "OpenAPI Ingest in 5 minutes"
+date: "2025-01-15"
+tags: [openapi]
+summary: "Validate requests/responses against your OpenAPI schemas."
+---
+
+OpenAPI request/response validation is built into the middleware. Start by enabling it in configuration, then iterate on schemas to catch issues before they hit upstream services. Import/normalization is labeled Beta/Roadmap while we finish automation.
+
+```yaml
+OpenAPI:
+  enabled: true
+  strict_response_validation: true
+```
+

@@ -1,0 +1,19 @@
+---
+title: "gRPC Gateway: Enterprise Protocol Support"
+date: "2025-02-12"
+tags: [grpc, protocols, security]
+summary: "How Modern API Gateway handles secure, observable gRPC traffic."
+---
+
+Modern API Gateway treats gRPC as a first-class citizen. Define a gRPC API, list its services, and the gateway will proxy streaming traffic with the same policy stack as REST.
+
+### Highlights
+
+- **mTLS everywhere** – supply custom CA bundles, enforce client certificates, and rotate credentials via the Admin Console.
+- **Per-method rate limiting** – attach quotas to individual RPCs or entire services.
+- **Reflection aware** – enable service reflection for toolchains, or disable it in production.
+- **Observability built-in** – Prometheus metrics, trace propagation, circuit breaker analytics, and correlation IDs.
+- **Hybrid routing** – mix gRPC and REST for the same upstream, sharing identity and policy contexts.
+
+Configuration lives in `config.yaml` or via the Admin Console designer, letting you add grpc:// or grpcs:// upstreams alongside REST, GraphQL, and aggregation rules.
+

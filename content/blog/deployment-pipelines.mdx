@@ -1,0 +1,15 @@
+---
+title: "Deployment Pipelines: Preview to Production"
+date: "2025-02-26"
+tags: [deployment, cicd]
+summary: "Use the Admin Console or API to promote definitions through preview → staged → promoted environments."
+---
+
+Every API change flows through a managed pipeline:
+
+1. **Preview** – import or design a definition, run linters, and share with reviewers.
+2. **Staged** – execute automated smoke tests, verify contract compatibility, and warm caches.
+3. **Promoted** – roll out gradually with weighted routing, monitor metrics, and auto-roll back on failure.
+
+Approvals, notifications, and audit logs are all tracked in the Admin Console. The same workflow can be automated via CLI or CI/CD using our deployment APIs.
+

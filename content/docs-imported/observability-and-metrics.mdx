@@ -1,0 +1,40 @@
+{/* imported from repo/docs/05-Observability-and-Metrics.md; review for secrets/PII before publishing */}
+
+**Metrics**
+
+| Metric | Type | Labels | Emitted From | Cardinality Risks |
+| --- | --- | --- | --- | --- |
+| `api_gateway_requests_total` | CounterVec | `api`, `method`, `status_code` | Incremented on every proxy response.^main.go:133^main.go:436^ | `api` uses definition name; ensure limited set per tenant release. |
+| `api_gateway_request_latency_seconds` | HistogramVec | `api`, `method` | Observed with request latency on success paths.^main.go:140^main.go:441^ | Histograms per method/API; keep API catalog bounded to avoid bucket explosion. |
+| `api_gateway_circuit_breaker_state_transitions_total` | CounterVec | `api`, `state` | Updated when circuit breaker changes state.^main.go:148^main.go:382^ | Label uses breaker key (UUID) so number of APIs drives series count. |
+| `gateway_oauth_failures_total` | CounterVec | `path`, `reason` | OAuth middleware increments on validation failure.^middleware/oauth2.0.go:58^middleware/oauth2.0.go:112^ | Path label could balloon if unbounded; normalize to pattern or controller name. |
+| `api_gateway_api_key_anomalies_total` | CounterVec | `api_key` | Counter registered but no increments observed in current tree.^main.go:163^main.go:307^ | Instrument anomaly detection before production and hash key label to protect secrets. |
+| `gateway_ratelimit_requests_total` | CounterVec | `api_name`, `key_strategy`, `limiter_type`, `status` | Rate limit middleware tracks allowed/blocked events.^middleware/ratelimit.go:161^middleware/ratelimit.go:315^ | `api_name` ties to definition name; `status` enumerates `allowed`, `blocked_*`. |
+| `gateway_ratelimit_errors_total` | CounterVec | `api_name`, `limiter_type` | Incremented when primary/fallback limiter errors.^middleware/ratelimit.go:164^middleware/ratelimit.go:323^ | Expect low cardinality (`memory` vs `redis`). |
+| `onboarding_step_completed_total` | CounterVec | `step_id` | Registered at startup and incremented when the onboarding service marks a step complete.^main.go:170^services/onboarding_service.go:112^services/onboarding_service.go:176^ | Five predefined steps keep series bounded; scrutinize label additions before expanding flow. |
+| `gateway_deploy_events_total` | CounterVec | `definition_id`, `event`, `outcome` | Emitted by the deployment lifecycle service for preview/stage/promote/rollback events.^main.go:170^services/deployment_lifecycle_service.go:99^services/deployment_lifecycle_service.go:186^ | Definition UUID drives series count; monitor multi-tenant growth and prune stale requests. |
+
+**Traces**
+
+| Span | Attributes | Start/End | Linked Route/Action | Notes |
+| --- | --- | --- | --- | --- |
+| `APIGatewayHandler` | `http.route`, `http.method`, `http.status_code`, `correlation_id` (via logs) | Span wraps per-request proxy logic.^main.go:2224^main.go:2255^main.go:2424^ | Triggered for all proxied requests through fallback handler.^main.go:2205^ | Uses tracer `"api-gateway"`; ensure exporter (`Jaeger`) configured via env.^main.go:207^main.go:212^ |
+| GraphQL handling span (delegated) | Shares `APIGatewayHandler`; GraphQL path logs `GraphQL flow initiated`. | Begins when protocol matches GraphQL heuristics.^main.go:2280^main.go:2284^ | `/graphql` APIs; leverages same fallback instrumentation. | Consider dedicated span for resolver to differentiate GraphQL vs REST latency. |
+| Aggregation flow | Logged branch sets attributes before encoding response.^main.go:2289^main.go:2298^ | Applies when `AggregationConfig` present; metric recorded after success.^main.go:2305^ | Combined responses from multiple upstreams. | No unique span; add nested span for fan-out operations if needed. |
+| Onboarding interactions | `onboarding.update-state`, `onboarding.generate-copy-curl`, `onboarding.trigger-smoke-test` | Created when onboarding endpoints execute.^controller/onboarding_controller.go:70^controller/onboarding_controller.go:107^ | `/admin/onboarding/*` endpoints; spans help correlate wizard progress with backend activity. | Keep labels limited to `step_id` to avoid high cardinality. |
+| `deploy.promote` / `deploy.rollback` | `deployment.request_id`, `deployment.definition_id`, `deployment.stage` | Spans wrap promote/rollback flows inside the deployment lifecycle service.^services/deployment_lifecycle_service.go:186^services/deployment_lifecycle_service.go:233^ | `/admin/organizations/{organization_id}/api-definitions/{definition_id}/deploy/...` endpoints.^controller/deployment_controller.go:205^controller/deployment_controller.go:238^ | Failure paths set status/error on the span and increment the deploy counter. |
+
+**Logs**
+
+| Component | Key Fields | Level Strategy | Notes |
+| --- | --- | --- | --- |
+| Proxy handler | `correlation_id`, `handler`, `matched_api_name`, `request_method`, `target_upstream_url`, `final_status` | Info on success, Warn/Error on anomalies.^main.go:2245^main.go:2396^main.go:2423^ | Correlation IDs are propagated from middleware; align log ingestion on this key. |
+| API key controller | `correlation_id`, `organization_id`, `acting_user_id`, `target_org_id`, error context | Warn/Error on auth/validation paths.^controller/apiKeyController.go:63^controller/apiKeyController.go:133^controller/apiKeyController.go:192^ | Ensures org-specific trails for key lifecycle events. |
+| Observability service/controller | Tagged by controller/service names and operations.^controller/observability_controller.go:54^services/observability_service.go:24^ | Errors return JSON with correlation ID; good candidate for alerting on 5xx. |
+| Centralized logging hook | `ElasticHook (Stub)` prints level/message/fields to stdout.^main.go:264^main.go:283^ | Stub indicates need to wire actual Elasticsearch publisher. |
+
+**Coverage Assessment**
+- Deploy markers rely on Prometheus counters and circuit breaker transitions; there is no built-in SLO reporting, so combine request latency histogram with success counters to compute availability externally.^main.go:436^main.go:2420^
+- Tracing defaults to `localhost` Jaeger endpoints; supply production collector env vars to avoid silent fallback.^main.go:212^main.go:221^
+- Logs already include correlation IDs; ship them to a centralized sink by implementing the Elastic hook TODO or forwarding via structured logging infrastructure.^main.go:288^main.go:3208^
+- Config reloads and circuit breaker refreshes only emit logs; consider lightweight counters to confirm control-plane health.^main.go:2048^main.go:313^

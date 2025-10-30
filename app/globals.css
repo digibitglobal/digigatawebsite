@@ -1,0 +1,300 @@
+/* -----------------------------------------------------------
+   Tailwind layers
+----------------------------------------------------------- */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* -----------------------------------------------------------
+   Color Tokens (sRGB fallback → OKLCH upgrade)
+   - Rebrand by editing --brand-l/--brand-c/--brand-h only.
+   - OKLCH-enhanced when supported; safe sRGB fallbacks otherwise.
+----------------------------------------------------------- */
+
+@layer base {
+  /* Fallback (sRGB) — used by older browsers and as initial values */
+  :root {
+    /* Base neutrals (sRGB triplets, for rgb(var(--*) / <alpha>)) */
+    --bg: 255 255 255;
+    --fg: 17 24 39;
+    --muted: 107 114 128;
+
+    /* Brand fallback (sRGB) — 500 strength only, utilities derive others */
+    --brand-500-rgb: 0 179 164; /* #00B3A4 */
+
+    /* Status fallbacks (sRGB) */
+    --success-rgb: 34 197 94;  /* #22c55e */
+    --warning-rgb: 245 158 11; /* #f59e0b */
+    --danger-rgb: 220 53 69;   /* #dc3545 */
+    --info-rgb: 6 182 212;     /* #06b6d4 */
+
+    /* Focus ring + radii + shadows */
+    --ring: 0 179 164; /* brand fallback for focus */
+    --radius: 14px;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 10px 40px -10px rgb(0 179 164 / 0.25);
+    --shadow-lg: 0 20px 60px -10px rgb(0 179 164 / 0.35);
+
+    /* Surface ladder (sRGB) */
+    --surface-1: 255 255 255;
+    --surface-2: 249 250 251;
+    --surface-3: 243 244 246;
+
+    /* Help the UA choose better native colors for form controls, etc. */
+    color-scheme: light dark;
+  }
+
+  /* Dark theme (fallback sRGB) */
+  :root.dark,
+  :root[data-theme="dark"] {
+    --bg: 17 24 39;
+    --fg: 243 244 246;
+    --muted: 156 163 175;
+
+    --brand-500-rgb: 0 144 131; /* darker teal for dark mode */
+    --ring: 0 144 131;
+
+    --success-rgb: 22 163 74;
+    --warning-rgb: 217 119 6;
+    --danger-rgb: 239 68 68;
+    --info-rgb: 14 165 233;
+
+    --surface-1: 17 24 39;
+    --surface-2: 31 41 55;
+    --surface-3: 55 65 81;
+  }
+
+  /* Prefer system dark when neither .dark nor [data-theme] is set */
+  @media (prefers-color-scheme: dark) {
+    :root:not(.dark):not([data-theme="light"]) {
+      --bg: 17 24 39;
+      --fg: 243 244 246;
+      --muted: 156 163 175;
+
+      --brand-500-rgb: 0 144 131;
+      --ring: 0 144 131;
+
+      --success-rgb: 22 163 74;
+      --warning-rgb: 217 119 6;
+      --danger-rgb: 239 68 68;
+      --info-rgb: 14 165 233;
+
+      --surface-1: 17 24 39;
+      --surface-2: 31 41 55;
+      --surface-3: 55 65 81;
+    }
+  }
+
+  /* Progressive enhancement: full OKLCH + derived scales */
+  @supports (color: oklch(50% 0.1 0)) {
+    :root {
+      /* 🔧 Rebrand primary by changing these only */
+      --brand-l: 0.65;  /* lightness for brand-500 */
+      --brand-c: 0.18;  /* chroma (saturation) */
+      --brand-h: 180;   /* hue — 180≈teal */
+
+      /* Status channels (tune to your palette) */
+      --success-l: 0.62; --success-c: 0.16; --success-h: 145; /* green */
+      --warning-l: 0.73; --warning-c: 0.16; --warning-h: 85;  /* amber */
+      --danger-l: 0.60;  --danger-c: 0.20; --danger-h: 25;   /* red */
+      --info-l: 0.70;    --info-c: 0.15;  --info-h: 210;     /* cyan/blue */
+
+      /* Primary anchors */
+      --brand-500: oklch(var(--brand-l) var(--brand-c) var(--brand-h));
+      --success:   oklch(var(--success-l) var(--success-c) var(--success-h));
+      --warning:   oklch(var(--warning-l) var(--warning-c) var(--warning-h));
+      --danger:    oklch(var(--danger-l)  var(--danger-c)  var(--danger-h));
+      --info:      oklch(var(--info-l)    var(--info-c)    var(--info-h));
+
+      /* Derive a 50→950 brand scale */
+      --brand-50:  color-mix(in oklch, var(--brand-500), white 92%);
+      --brand-100: color-mix(in oklch, var(--brand-500), white 84%);
+      --brand-200: color-mix(in oklch, var(--brand-500), white 72%);
+      --brand-300: color-mix(in oklch, var(--brand-500), white 56%);
+      --brand-400: color-mix(in oklch, var(--brand-500), white 32%);
+      --brand-600: color-mix(in oklch, var(--brand-500), black 10%);
+      --brand-700: color-mix(in oklch, var(--brand-500), black 22%);
+      --brand-800: color-mix(in oklch, var(--brand-500), black 34%);
+      --brand-900: color-mix(in oklch, var(--brand-500), black 46%);
+      --brand-950: color-mix(in oklch, var(--brand-500), black 58%);
+
+      /* Neutral ladder (OKLCH neutrals with subtle hue to avoid banding) */
+      --neutral-50:  oklch(98% 0.01 250);
+      --neutral-100: oklch(96% 0.01 250);
+      --neutral-200: oklch(93% 0.01 250);
+      --neutral-300: oklch(88% 0.02 250);
+      --neutral-800: oklch(28% 0.02 250);
+      --neutral-900: oklch(20% 0.03 250);
+
+      /* Map surfaces to neutrals */
+      --surface-1-oklch: var(--neutral-50);
+      --surface-2-oklch: var(--neutral-100);
+      --surface-3-oklch: var(--neutral-200);
+      --fg-oklch:        oklch(20% 0.03 250);
+      --fg2-oklch:       oklch(45% 0.03 250); /* “muted” foreground */
+    }
+
+    :root.dark,
+    :root[data-theme="dark"] {
+      /* Dark surfaces & foregrounds */
+      --surface-1-oklch: oklch(20% 0.03 250);
+      --surface-2-oklch: oklch(24% 0.03 250);
+      --surface-3-oklch: oklch(30% 0.03 250);
+      --fg-oklch:        oklch(95% 0.01 250);
+      --fg2-oklch:       oklch(80% 0.01 250);
+
+      /* Optional: slightly brighten brand in dark for contrast */
+      --brand-l: 0.68;
+    }
+  }
+
+  /* -----------------------------------------------------------
+     Base element styling
+  ----------------------------------------------------------- */
+  html,
+  body { height: 100%; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    /* sRGB fallback path */
+    background-color: rgb(var(--bg));
+    color: rgb(var(--fg));
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  }
+
+  /* Upgrade to OKLCH when available */
+  @supports (color: oklch(50% 0.1 0)) {
+    body {
+      background-color: var(--surface-1-oklch);
+      color: var(--fg-oklch);
+    }
+  }
+
+  /* Selection */
+  ::selection {
+    background-color: color-mix(in oklch, var(--brand-500, oklch(65% 0.18 180)), transparent 80%);
+    color: currentColor;
+  }
+  @supports not (color: oklch(50% 0.1 0)) {
+    ::selection { background-color: rgb(var(--brand-500-rgb) / 0.2); }
+  }
+
+  /* Focus ring — aligns with Tailwind ring utilities */
+  :where(button, a, input, textarea, select):focus-visible {
+    outline: 2px solid;
+    outline-offset: 2px;
+    outline-color: oklch(from var(--brand-500, oklch(65% 0.18 180)) l c h);
+  }
+  @supports not (color: oklch(50% 0.1 0)) {
+    :where(button, a, input, textarea, select):focus-visible { outline-color: rgb(var(--ring)); }
+  }
+
+  /* Scrollbar (WebKit) */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: rgb(var(--bg)); }
+  ::-webkit-scrollbar-thumb { background: rgb(var(--muted)); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgb(var(--brand-500-rgb)); }
+}
+
+/* Container utility, consistent with Tailwind’s container defaults */
+.container-default { @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8; }
+
+/* Gradient text */
+.gradient-text { @apply bg-clip-text text-transparent bg-gradient-to-r; }
+
+/* Motion reduction */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Glass morphism */
+.glass {
+  @apply backdrop-blur-md border;
+  background: color-mix(in oklch, var(--surface-1-oklch, white), transparent 90%);
+  border-color: color-mix(in oklch, var(--brand-500, oklch(65% 0.18 180)), transparent 92%);
+}
+@supports not (backdrop-filter: blur(10px)) {
+  .glass { background-color: rgb(var(--bg) / 0.98); }
+}
+
+/* Shadows */
+.shadow-brand    { box-shadow: var(--shadow-md); }
+.shadow-brand-lg { box-shadow: var(--shadow-lg); }
+
+/* Progress bar */
+.progress-bar { transform-origin: left; }
+
+/* Page enter animation */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-enter { animation: fadeInUp 0.6s ease-out; }
+
+/* Print */
+@media print { .no-print { display: none !important; } }
+
+/* High-contrast mode */
+@media (prefers-contrast: more) {
+  .glass { backdrop-filter: none; background: rgb(var(--bg)); }
+}
+
+/* Mobile tweak */
+@media (max-width: 768px) { .container-default { @apply px-4; } }
+
+/* -----------------------------------------------------------
+   Component Primitives (semantic, align with Tailwind classes)
+----------------------------------------------------------- */
+@layer components {
+  .card {
+    border-radius: var(--radius);
+    background: color-mix(in oklch, var(--surface-1-oklch, white), transparent 0%);
+    box-shadow: var(--shadow-sm);
+    @apply border border-black/5 dark:border-white/10;
+  }
+
+  .btn {
+    --_bg: var(--brand-600, oklch(58% 0.18 180));
+    --_bg-rgb: var(--brand-500-rgb);
+    --_text: white;
+
+    border-radius: calc(var(--radius) - 6px);
+    padding: 0.625rem 1rem;
+    font-weight: 600;
+    @apply inline-flex items-center justify-center gap-2;
+
+    background: var(--_bg);
+    color: var(--_text);
+  }
+  @supports not (color: oklch(50% 0.1 0)) {
+    .btn { background: rgb(var(--_bg-rgb)); }
+  }
+  .btn:hover {
+    background: color-mix(in oklch, var(--brand-600, oklch(58% 0.18 180)), black 6%);
+  }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--fg-oklch, rgb(var(--fg)));
+    @apply border border-black/10 dark:border-white/15;
+  }
+  .btn-outline:hover {
+    border-color: color-mix(in oklch, var(--brand-500, oklch(65% 0.18 180)), transparent 50%);
+  }
+
+  .badge {
+    border-radius: 999px;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    background: color-mix(in oklch, var(--brand-500, oklch(65% 0.18 180)), transparent 80%);
+    color: color-mix(in oklch, var(--brand-900, black), white 92%);
+  }
+}

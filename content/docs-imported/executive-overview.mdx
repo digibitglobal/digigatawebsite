@@ -1,0 +1,479 @@
+{/* imported from repo/docs/01-Executive-Overview.md; review for secrets/PII before publishing */}
+
+# Executive Overview
+
+**Document Version:** 1.0
+**Last Updated:** October 25, 2025
+
+---
+
+## Purpose and Scope
+
+The **Modern API Gateway** is an enterprise-grade, multi-tenant API management platform designed to provide organizations with centralized control over API exposure, security, observability, and lifecycle management. This solution combines a **Go-based API Gateway** with a **Next.js Admin Console** to deliver comprehensive API governance capabilities.
+
+---
+
+## Business Value
+
+### For Organizations
+- **Centralized API Management:** Single point of control for all exposed APIs across teams
+- **Multi-Tenancy:** Isolated workspaces for different organizations/business units
+- **Security:** Enterprise-grade authentication (JWT, OAuth2, mTLS, API Keys) and authorization (RBAC/ABAC)
+- **Observability:** Real-time monitoring, distributed tracing, and comprehensive audit logs
+- **Cost Control:** Rate limiting, quota management, and resource tracking per tenant
+
+### For Developers
+- **Dynamic API Definition:** Create, update, and deploy APIs without code changes or restarts
+- **Multiple Protocols:** HTTP/REST, GraphQL, and gRPC support
+- **OpenAPI Integration:** Import/export API definitions from OpenAPI 3.0 specifications
+- **Service Discovery:** Automatic upstream service discovery via Consul
+- **Developer Portal:** Self-service API key management and documentation
+
+### For Operations
+- **Zero-Downtime Deployments:** Hot-reload of API definitions and configurations
+- **High Availability:** Circuit breakers, health checks, and automatic failover
+- **Scalability:** Stateless design for horizontal scaling
+- **Monitoring:** Prometheus metrics, Jaeger distributed tracing, structured logging
+
+---
+
+## Architecture at a Glance
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      CLIENT APPLICATIONS                        │
+│         (Web, Mobile, IoT, Third-party Integrations)            │
+└────────────────┬────────────────────────────────────────────────┘
+                 │
+                 │ HTTPS/gRPC
+                 ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   API GATEWAY (Go)                              │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Middleware Chain:                                        │  │
+│  │ • Tenant Extraction (subdomain/header)                   │  │
+│  │ • Authentication (JWT/OAuth2/mTLS/API Key)               │  │
+│  │ • Rate Limiting (Redis token bucket)                     │  │
+│  │ • ABAC/RBAC Authorization                                │  │
+│  │ • OpenAPI Validation                                     │  │
+│  │ • Circuit Breaker                                        │  │
+│  │ • Observability (Metrics, Tracing, Logging)              │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└────────────────┬────────────────────────────────────────────────┘
+                 │
+                 │ Dynamic Routing
+                 ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              UPSTREAM BACKEND SERVICES                          │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
+│  │ Service  │  │ Service  │  │ Service  │  │ GraphQL  │       │
+│  │    A     │  │    B     │  │    C     │  │  Server  │       │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘       │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                  INFRASTRUCTURE SERVICES                        │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
+│  │PostgreSQL│  │  Redis   │  │  Consul  │  │Prometheus│       │
+│  │   DB     │  │  Cache   │  │ Service  │  │  Metrics │       │
+│  │          │  │  & Rate  │  │Discovery │  │          │       │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘       │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                ADMIN CONSOLE (Next.js)                          │
+│  • API Definition Management                                    │
+│  • Organization & User Management                               │
+│  • RBAC/ABAC Policy Configuration                               │
+│  • Real-time Monitoring Dashboard                               │
+│  • Audit Log Viewer                                             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Key Features
+
+### Multi-Tenancy
+- **Organization Isolation:** Complete data separation per tenant
+- **Subdomain Routing:** Automatic tenant resolution from subdomain (e.g., `tenant1.example.com`)
+- **Tenant-Scoped Resources:** API definitions, users, API keys, rate limits per organization
+- **Feature Flags:** Per-tenant feature enablement and plan tiers
+
+**Source:** [api/admin_Model.go:56-75](../api/admin_Model.go), [middleware/tenant.go](../middleware/tenant.go)
+
+### Advanced Security
+
+#### Authentication Methods
+1. **JWT Tokens:** Bearer tokens with RS256/HS256 signing, automatic refresh
+2. **API Keys:** SHA256-hashed keys with expiration and rotation support
+3. **OAuth 2.0/OIDC:** Token introspection and JWKS-based validation
+4. **Mutual TLS (mTLS):** Certificate-based authentication for service-to-service
+
+**Source:** [services/jwt_service.go](../services/jwt_service.go), [middleware/oauth2.0.go](../middleware/oauth2.0.go), [middleware/mtls_middleware.go](../middleware/mtls_middleware.go)
+
+#### Authorization
+- **RBAC:** Role-based access control with fine-grained permissions
+- **ABAC:** Attribute-based policies (user attributes, resource attributes, environment context)
+- **Policy Engine:** Dynamic policy evaluation at request time
+
+**Source:** [services/RBACService.go](../services/RBACService.go), [services/abac_service.go](../services/abac_service.go)
+
+### Rate Limiting & Quotas
+- **Distributed:** Redis-backed token bucket algorithm
+- **Multi-Strategy:** Per-IP, per-organization, per-user, per-API key
+- **Configurable:** Per-API rate limits with burst support
+- **Real-time:** Sub-millisecond latency for limit checks
+
+**Source:** [middleware/ratelimit.go](../middleware/ratelimit.go)
+
+### Service Discovery & Dynamic Routing
+- **Consul Integration:** Automatic service instance discovery
+- **Health Checks:** Periodic health verification with automatic failover
+- **Load Balancing:** Round-robin and weighted load balancing
+- **Circuit Breaker:** Automatic upstream protection using gobreaker
+
+**Source:** [internal/routing/dynamic_router.go](../internal/routing/dynamic_router.go)
+
+### Observability
+
+#### Metrics (Prometheus)
+- Request rate, latency (percentiles), error rate
+- Circuit breaker state transitions
+- Rate limit violations
+- Custom business metrics
+
+**Endpoint:** `/metrics`
+
+#### Distributed Tracing (Jaeger)
+- OpenTelemetry integration
+- Request correlation across services
+- Performance bottleneck identification
+
+#### Structured Logging
+- JSON-formatted logs with correlation IDs
+- Organization and user context in every log
+- Configurable log levels (debug, info, warn, error)
+
+**Source:** [main.go:225-280](../main.go), [metrics/metrics.go](../metrics/metrics.go)
+
+### API Lifecycle Management
+- **Versioning:** Semantic versioning support (v1, v2, etc.)
+- **Deprecation:** Sunset dates and deprecation warnings
+- **Deployment Pipeline:** Approval workflows for API changes
+- **Bulk Import:** OpenAPI 3.0 specification import
+
+**Source:** [services/apiLifecycleService.go](../services/apiLifecycleService.go), [controller/admin_controller.go](../controller/admin_controller.go)
+
+---
+
+## Technology Stack
+
+### Backend (API Gateway)
+| Component | Technology | Version | Purpose |
+|-----------|-----------|---------|---------|
+| **Runtime** | Go | 1.23.8+ | Core language |
+| **HTTP Router** | Gorilla Mux | 1.8.1 | Request routing |
+| **Database** | PostgreSQL | 15 | Primary data store |
+| **ORM** | GORM | 1.25.12 | Database abstraction |
+| **Cache** | Redis | 7 | Rate limiting, caching, sessions |
+| **Service Discovery** | Consul | 1.20 | Dynamic service resolution |
+| **Circuit Breaker** | Gobreaker | 1.0.0 | Fault tolerance |
+| **Metrics** | Prometheus | 1.21.0 | Time-series metrics |
+| **Tracing** | OpenTelemetry + Jaeger | 1.35.0 | Distributed tracing |
+| **Auth** | JWT, OAuth2, mTLS | Various | Authentication |
+
+### Frontend (Admin Console)
+| Component | Technology | Version | Purpose |
+|-----------|-----------|---------|---------|
+| **Framework** | Next.js | 14.2.9 | React framework |
+| **Language** | TypeScript | 5.7.2 | Type safety |
+| **UI** | Chakra UI + Tailwind | 2.8.2 + 3.4.13 | Component library + utility CSS |
+| **Auth** | NextAuth | 4.24.8 | Session management |
+| **State** | Redux Toolkit | 2.2.6 | Global state |
+| **Data Fetching** | React Query | 5.51.6 | Async state management |
+| **Forms** | Formik + Yup | 2.4.6 + 1.4.0 | Form handling + validation |
+| **HTTP** | Axios | 1.7.8 | API client |
+
+**Full Dependency List:** [go.mod](../go.mod), [admin-console/package.json](../admin-console/package.json)
+
+---
+
+## Deployment Architecture
+
+### Infrastructure Components
+
+**Development Environment (Docker Compose):**
+- **API Gateway:** Port 8089 (HTTP) + 50051 (gRPC)
+- **Admin Console:** Port 3000 (Next.js)
+- **PostgreSQL:** Port 5432
+- **Redis:** Port 6379
+- **Consul:** Port 8500 (UI + API)
+- **Prometheus:** Port 9090
+- **Jaeger:** Port 16686 (UI), 6831 (Agent)
+
+**Production Considerations:**
+- Kubernetes deployment manifests (prepared)
+- Horizontal Pod Autoscaling (HPA) for API Gateway
+- StatefulSets for PostgreSQL/Redis
+- ConfigMaps for dynamic configuration
+- Secrets management via external providers (Vault, AWS Secrets Manager)
+
+**Source:** [docker-compose.yml](../docker-compose.yml), [Dockerfile](../Dockerfile)
+
+---
+
+## Performance Characteristics
+
+### Throughput
+- **Requests/sec:** 10,000+ per instance (benchmarked under load)
+- **Latency (p50):** <10ms (excludes upstream)
+- **Latency (p99):** <50ms (excludes upstream)
+
+### Scalability
+- **Stateless:** No in-memory session state, scales horizontally
+- **Database Connections:** Pooled (max 25 per instance)
+- **Redis Connections:** Pooled (10 connections, 3 min idle)
+
+### Resource Requirements (Per Instance)
+- **CPU:** 1-2 cores (typical), 4+ cores (high traffic)
+- **Memory:** 512MB-1GB (typical), 2GB+ (high traffic)
+- **Disk:** Minimal (logs only, rotated)
+
+---
+
+## Security Posture
+
+### Authentication & Authorization
+✅ Multiple authentication methods (JWT, OAuth2, mTLS, API Keys)
+✅ Role-Based Access Control (RBAC) with fine-grained permissions
+✅ Attribute-Based Access Control (ABAC) for dynamic policies
+✅ Session management with automatic token refresh
+✅ Account lockout after failed login attempts
+
+### Data Protection
+✅ Passwords hashed with bcrypt (cost factor 10)
+✅ API keys hashed with SHA256 (plaintext never stored)
+✅ JWT tokens signed and verified
+✅ TLS/HTTPS for all external communication
+✅ mTLS support for service-to-service communication
+
+### Audit & Compliance
+✅ Comprehensive audit logs for all actions
+✅ Organization-scoped audit trails
+✅ Correlation IDs for request tracing
+✅ Tamper-evident logs (timestamped, immutable)
+
+### Vulnerability Management
+✅ Dependency scanning with `go mod` security advisories
+✅ Container image scanning (Trivy compatible)
+✅ Regular security updates
+
+**Source:** [03.6 Security and AuthN/AuthZ](./03-Backend/03.6-Security-and-AuthN-AuthZ.md), [08. Security](./08-Security/)
+
+---
+
+## Operational Considerations
+
+### High Availability
+- **Stateless Design:** No local state, allows instant failover
+- **Health Checks:** Liveness and readiness probes
+- **Circuit Breakers:** Automatic upstream failure isolation
+- **Database Replication:** Primary/replica setup supported
+- **Redis Cluster:** Multi-node Redis for cache redundancy
+
+### Monitoring & Alerting
+- **Prometheus Metrics:** 15+ metric types exposed
+- **Grafana Dashboards:** Pre-built dashboards available
+- **Alerting Rules:** Configurable thresholds (error rate, latency, circuit breaker state)
+- **Distributed Tracing:** Request flow visualization via Jaeger
+
+### Disaster Recovery
+- **Backup:** PostgreSQL automated backups (daily snapshots)
+- **Recovery Point Objective (RPO):** <1 hour (configurable)
+- **Recovery Time Objective (RTO):** <15 minutes (automated)
+- **Data Replication:** Multi-region support (future enhancement)
+
+**Source:** [06.4 Backup, DR, and RPO/RTO](./06-Operations/06.4-Backup-DR-and-RPO-RTO.md)
+
+---
+
+## Compliance & Standards
+
+### Implemented Standards
+- **OpenAPI 3.0:** API definition specification
+- **OAuth 2.0:** RFC 6749 authentication
+- **JWT:** RFC 7519 token format
+- **mTLS:** X.509 certificate-based authentication
+- **Prometheus Exposition Format:** Metrics standard
+- **OpenTelemetry:** Distributed tracing standard
+
+### Audit Capabilities
+- **User Actions:** All CRUD operations logged
+- **Access Logs:** API request/response metadata
+- **Change Tracking:** Before/after state for updates
+- **Compliance Reports:** Exportable audit logs
+
+---
+
+## Limitations & Constraints
+
+### Current Limitations
+1. **GraphQL Federation:** Not yet implemented (single GraphQL endpoint only)
+2. **Multi-Region:** Single-region deployment (multi-region requires coordination service)
+3. **WebSockets:** Limited support (HTTP upgrade not fully tested)
+4. **API Gateway Clustering:** Redis-based coordination only (no Raft/Paxos consensus)
+
+### Scalability Constraints
+- **PostgreSQL:** Vertical scaling primary (read replicas supported)
+- **Rate Limiting:** Redis performance dictates max rate limit checks/sec
+- **Circuit Breaker:** Per-instance state (not distributed)
+
+### Future Enhancements
+- Open Policy Agent (OPA) integration for advanced policy evaluation
+- API Gateway clustering with distributed circuit breakers
+- GraphQL federation and schema stitching
+- WebSocket and Server-Sent Events (SSE) full support
+- Multi-region active-active deployment
+
+**Source:** [README.md](../README.md) Future Enhancements section
+
+---
+
+## Total Cost of Ownership (TCO)
+
+### Infrastructure Costs (Monthly, Typical)
+| Component | Resource | Estimated Cost |
+|-----------|----------|----------------|
+| **API Gateway** | 3x t3.large (2vCPU, 8GB) | $180 |
+| **PostgreSQL** | 1x db.m5.large + replica | $300 |
+| **Redis** | 1x cache.m5.large | $150 |
+| **Consul** | 3x t3.small | $60 |
+| **Monitoring** | Prometheus + Grafana (managed) | $100 |
+| **Total** | | **~$790/month** |
+
+*Costs vary by cloud provider and region. Above estimates are AWS us-east-1 On-Demand pricing.*
+
+### Operational Costs
+- **Development:** 2 FTE (Full-Time Equivalent) for ongoing enhancements
+- **Operations:** 1 FTE for monitoring, maintenance, and incident response
+- **Security:** 0.5 FTE for security patching and compliance
+
+---
+
+## Getting Started
+
+### Quick Setup (Development)
+
+```bash
+# Clone repository
+git clone https://github.com/ABDULS21985/Mordern-API-Gateway.git
+cd Mordern-API-Gateway
+
+# Start infrastructure services
+docker-compose up -d postgres redis consul prometheus
+
+# Run migrations
+docker-compose up migrations
+
+# Seed initial data
+docker-compose up seeder
+
+# Start API Gateway
+docker-compose up api-gateway
+
+# Start Admin Console (separate terminal)
+cd admin-console
+yarn install
+yarn dev
+
+# Access:
+# - API Gateway: http://localhost:8089
+# - Admin Console: http://localhost:3000
+# - Consul UI: http://localhost:8500
+# - Prometheus: http://localhost:9090
+```
+
+**Full Setup Guide:** [06.1 Deployments and Environments](./06-Operations/06.1-Deployments-and-Environments.md)
+
+---
+
+## Roadmap
+
+### Q1 2025
+- ✅ Multi-tenant foundation
+- ✅ JWT, OAuth2, mTLS authentication
+- ✅ RBAC/ABAC authorization
+- ✅ Prometheus + Jaeger observability
+
+### Q2 2025 (Planned)
+- 🔲 GraphQL Federation
+- 🔲 OPA Policy Engine Integration
+- 🔲 Advanced Rate Limiting (Sliding Window)
+- 🔲 Multi-Region Support (active-passive)
+
+### Q3 2025 (Planned)
+- 🔲 Developer Portal (API Catalog, Documentation)
+- 🔲 API Monetization (Usage-based billing)
+- 🔲 WebSocket and SSE Full Support
+- 🔲 Machine Learning Anomaly Detection
+
+---
+
+## Support & Resources
+
+- **Documentation:** This repository
+- **Issue Tracker:** GitHub Issues
+- **Community:** GitHub Discussions
+- **Contact:** admin@katanga.com (replace with actual contact)
+
+---
+
+## Conclusion
+
+The Modern API Gateway provides enterprise-grade API management with comprehensive multi-tenancy, security, and observability. It is production-ready for organizations requiring:
+
+- Centralized API governance across teams
+- Strong security and compliance
+- High availability and scalability
+- Real-time monitoring and troubleshooting
+- Multi-tenant isolation
+
+**Total Codebase:**
+- Backend: 103 Go files (~50,000 lines)
+- Frontend: 144 TypeScript files (~40,000 lines)
+- Infrastructure: Docker Compose + K8s manifests
+
+**Supported Protocols:** HTTP/REST, GraphQL, gRPC
+**Deployment Targets:** Docker, Kubernetes, VM-based
+**Cloud Providers:** AWS, Azure, GCP, on-premises
+
+---
+
+**Document Version:** 1.0
+**Generated:** 2025-10-25
+**Maintained By:** Platform Engineering Team
+
+## Admin Console Overview
+
+- 144+ pages covering onboarding workflows, API definition designer, deployment lifecycle (preview → staged → promoted), observability dashboards, billing attribution, and audits.
+- Delegated administration with RBAC/ABAC, session management, and per-tenant views.
+- Integration orchestration: webhook subscriptions, automation hooks, and configuration catalogues for environments.
+
+## gRPC Support
+
+- Native gRPC/grpcs routing with service reflection, mTLS, custom CA bundles, and streaming interceptors.
+- Per-method rate limiting, circuit breaker protection, and Prometheus metrics per RPC.
+- Admin Console designer for gRPC definitions alongside REST and GraphQL.
+
+## Webhook Orchestration
+
+- Event subscriptions for tenant lifecycle, deployments, policies, and consumer activity.
+- Delivery policies with retry backoff, dead-letter queues, replay tools, and signature rotation.
+- Delivery analytics, alerting hooks, and automation-friendly APIs.
+
+## Consumer Groups & Multi-Tenancy
+
+- Group consumers under a tenant, share credentials, and apply shared policies and quotas.
+- End-to-end isolation with org-scoped data, delegated administrators, and export tooling.
+- Reporting and billing attribution by consumer group, surfaced in the Admin Console dashboards.
