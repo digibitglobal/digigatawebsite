@@ -1,5 +1,5 @@
 {
-  "name": "modern-api-gateway-website",
+  "name": "digigate-api-gateway-website",
   "private": true,
   "version": "0.1.0",
   "scripts": {
@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start -p 3001",
     "lint": "echo 'No lint configured'",
-    "check:links": "linkinator ./out/index.html --recurse --concurrency 5 --skip \"https://modern-api-gateway.example.com/*\"",
+    "check:links": "linkinator ./out/index.html --recurse --concurrency 5 --skip \"https://digigate-api-gateway.example.com/*\"",
     "import:docs": "ts-node --transpile-only scripts/import-docs.ts",
     "generate:sitemap": "ts-node --transpile-only scripts/regenerate-sitemap.ts",
     "lh:ci": "lhci autorun || echo LHCI optional",
