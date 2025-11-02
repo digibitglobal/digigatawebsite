@@ -10,3 +10,144 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# ──────────────────────────────────────────────────────────────────────────────
+# 1. BINARY ARTIFACTS & BUILD OUTPUT
+# ──────────────────────────────────────────────────────────────────────────────
+# Go binaries and build artifacts
+/bin/
+/*.exe
+/*.dll
+/*.so
+/*.dylib
+*.test
+*.out
+*.a
+*.o
+.claude
+.claude-temp
+# Docker build output
+*.tar
+*.img
+
+# Distroless & multi-stage build intermediates
+/*-distroless/
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 2. DEPENDENCIES
+# ──────────────────────────────────────────────────────────────────────────────
+# Go vendor directory
+/vendor/
+
+/node_modules/         # if front-end hybrid stack present
+*.tsbuildinfo
+
+node_modules/
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 3. CONFIGURATION & SECRETS
+# ──────────────────────────────────────────────────────────────────────────────
+# Environment variables
+.env
+.env.*
+# YAML/JSON configs (avoid committing secrets)
+config.yaml
+config/*.yaml
+config/*.json
+
+progress-data
+
+consul-data/
+data/
+logs/
+*.log
+*.wal
+*.rar
+*.zip
+# Node / Next.js
+node_modules/
+.next/
+dist/
+build/
+.coverage/
+# Go
+bin/
+*.exe
+*.dll
+*.so
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 4. DATA DIRECTORIES & STATE
+# ──────────────────────────────────────────────────────────────────────────────
+# Database and migration artifacts
+/db/
+/db/migrations/
+/migrations/
+/postgres-data/
+/consul-data/
+
+# Generated local backups
+/backup/
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 5. LOGS & PROCESS IDS
+# ──────────────────────────────────────────────────────────────────────────────
+*.log
+logs/
+/test-results/
+/*.pid
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 6. IDE & EDITOR STATE
+# ──────────────────────────────────────────────────────────────────────────────
+# VSCode, JetBrains, Vim swap files, Mac/Windows metadata
+.vscode/
+.idea/
+*.swp
+*~
+
+.DS_Store
+Thumbs.db
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 7. COVERAGE & TEST REPORTS
+# ──────────────────────────────────────────────────────────────────────────────
+coverage.out
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 8. MISCELLANEOUS
+# ──────────────────────────────────────────────────────────────────────────────
+*.bak
+*.tmp
+*.lock
+*.orig
+*.rej
+# ──────────────────────────────────────────────────────────────────────────────
+# DATA DIRECTORIES & STATE (Extended)
+# ──────────────────────────────────────────────────────────────────────────────
+# Consul persistent state (raft logs, snapshots, metadata)
+consul-data/
+consul-data/**/raft/
+consul-data/**/snapshots/
+consul-data/**/wal-meta.db
+consul-data/**/local.snapshot
+consul-data/**/remote.snapshot
+consul-data/server_metadata.json
+
+# PostgreSQL data directories & transactional logs
+postgres-data/
+postgres-data/base/
+postgres-data/global/
+postgres-data/pg_xact/
+postgres-data/PG_VERSION
+postgres-data/pg_internal.init
+postgres-data/pg_control
+
+# If you mount individual subfolders in Compose, ignore them all:
+**/base/*
+**/global/*
+**/pg_xact/*
+**/pg_control
+
+# One-off WAL segments, init files, etc.
+*.init
+*.db
